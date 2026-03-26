@@ -8,8 +8,8 @@ let aiClient: GoogleGenAI | null = null;
 function getAIClient(): GoogleGenAI {
   if (!aiClient) {
     const apiKey = process.env.API_KEY;
-    if (!apiKey || apiKey === 'undefined') {
-      throw new Error("API Key is missing. Please add your Gemini API Key to the .env file.");
+    if (!apiKey || apiKey === 'undefined' || apiKey === 'your_gemini_api_key_here') {
+      throw new Error("API Key is missing or invalid. Please add your actual Gemini API Key to the .env file.");
     }
     aiClient = new GoogleGenAI({ apiKey });
   }
@@ -169,7 +169,7 @@ export const analyzeCropImage = async (
   promptText: string,
   lang: Language
 ): Promise<DiagnosisResult> => {
-  const modelId = "gemini-3.1-pro-preview"; // Use Pro for complex reasoning
+  const modelId = "gemini-3-flash-preview"; // Switched to Flash for higher free tier quota (15 RPM vs 2 RPM)
 
   const diagnosisSchema: Schema = {
     type: Type.OBJECT,
@@ -185,8 +185,20 @@ export const analyzeCropImage = async (
     required: ["diseaseName", "confidence", "treatment", "explanation", "marathiName", "fertilizerAdvice"],
   };
 
-  try {
+    try {
     const ai = getAIClient();
+    
+    // Create config without tools if thinking is enabled
+    const generateConfig: any = {
+        systemInstruction: SYSTEM_PROMPT,
+        responseMimeType: "application/json",
+        responseSchema: diagnosisSchema,
+    };
+    
+    // Gemini 3.1 Pro does not support tools + thinking at the same time
+    // We will just use thinking for the diagnosis
+    generateConfig.thinkingConfig = { thinkingLevel: ThinkingLevel.HIGH };
+
     const response = await ai.models.generateContent({
       model: modelId,
       contents: {
@@ -195,13 +207,7 @@ export const analyzeCropImage = async (
           { text: `${promptText}. IMPORTANT: Respond strictly in ${lang} language.` }
         ]
       },
-      config: {
-        systemInstruction: SYSTEM_PROMPT,
-        responseMimeType: "application/json",
-        responseSchema: diagnosisSchema,
-        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH }, // Enable reasoning
-        tools: [{ functionDeclarations: [getMarketPricesTool, getWeatherTool] }]
-      }
+      config: generateConfig
     });
 
     const text = response.text;
@@ -225,7 +231,7 @@ export const askAdvisor = async (query: string, lang: Language, location: string
 
     // Configure based on Mode
     if (mode === 'think') {
-        modelId = "gemini-3.1-pro-preview";
+        modelId = "gemini-3-flash-preview"; // Switched to Flash for higher free tier quota
         config.thinkingConfig = { thinkingLevel: ThinkingLevel.HIGH }; // Enable deep thinking
     } else if (mode === 'store') {
         // Use Google Search for real stores
