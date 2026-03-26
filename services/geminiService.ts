@@ -2,8 +2,19 @@ import { GoogleGenAI, Type, FunctionDeclaration, Schema, ThinkingLevel } from "@
 import { SYSTEM_PROMPT, LOCATION_COORDS, getMarketPricesForLocation } from "../constants";
 import { DiagnosisResult, Language, WeatherData, ForecastDay } from "../types";
 
-// Initialize Gemini Client
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Initialize Gemini Client Lazily
+let aiClient: GoogleGenAI | null = null;
+
+function getAIClient(): GoogleGenAI {
+  if (!aiClient) {
+    const apiKey = process.env.API_KEY;
+    if (!apiKey || apiKey === 'undefined') {
+      throw new Error("API Key is missing. Please add your Gemini API Key to the .env file.");
+    }
+    aiClient = new GoogleGenAI({ apiKey });
+  }
+  return aiClient;
+}
 
 // --- Real Data Helper Functions ---
 
@@ -175,6 +186,7 @@ export const analyzeCropImage = async (
   };
 
   try {
+    const ai = getAIClient();
     const response = await ai.models.generateContent({
       model: modelId,
       contents: {
@@ -227,6 +239,7 @@ export const askAdvisor = async (query: string, lang: Language, location: string
     try {
         const fullQuery = `User Location: ${location}. Language: ${lang}. Query: ${query}. (Keep answer short, bullet points, in ${lang}).`;
 
+        const ai = getAIClient();
         const response = await ai.models.generateContent({
             model: modelId,
             contents: fullQuery,
@@ -252,6 +265,7 @@ export const askAdvisor = async (query: string, lang: Language, location: string
 
         if (functionCalls && functionCalls.length > 0) {
             const toolResults = await handleToolCalls(functionCalls, lang);
+             const ai = getAIClient();
              const response2 = await ai.models.generateContent({
                 model: modelId,
                 contents: [
@@ -266,8 +280,8 @@ export const askAdvisor = async (query: string, lang: Language, location: string
 
         return responseText;
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Gemini Advisor Error:", error);
-        return "Network error. Please try again.";
+        return `Error: ${error?.message || "Network error. Please try again."}`;
     }
 }
