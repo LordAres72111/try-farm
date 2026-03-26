@@ -12,7 +12,7 @@ A real-time, multimodal conversational experience.
 *   **Pinch-to-Zoom & Camera Flip**: Optimized for field usage on mobile devices.
 
 ### 2. 🩺 AI Crop Doctor
-*   **Instant Diagnosis**: Upload a high-res photo for deep analysis using `gemini-3-pro`.
+*   **Instant Diagnosis**: Upload a high-res photo for deep analysis using `gemini-3.1-pro-preview`.
 *   **Structured Reports**: Returns confidence scores, local disease names (e.g., in Marathi/Hindi), and chemical vs. organic treatment plans.
 
 ### 3. 🧠 Smart Advisor (Reasoning Engine)
@@ -29,7 +29,7 @@ A real-time, multimodal conversational experience.
 *   **AI SDK**: `@google/genai` (v1.39.0+)
 *   **Models Used**:
     *   `gemini-2.5-flash-native-audio-preview-12-2025`: For **FarmWise Live** (Low latency Audio+Video streaming).
-    *   `gemini-3-pro-preview`: For **Crop Diagnosis** (High reasoning accuracy).
+    *   `gemini-3.1-pro-preview`: For **Crop Diagnosis** (High reasoning accuracy).
     *   `gemini-3-flash-preview`: For **Chat & Search** (Speed & Grounding).
 
 ## ⚡ Technical Implementation Highlights

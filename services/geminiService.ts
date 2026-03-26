@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type, FunctionDeclaration, Schema } from "@google/genai";
+import { GoogleGenAI, Type, FunctionDeclaration, Schema, ThinkingLevel } from "@google/genai";
 import { SYSTEM_PROMPT, LOCATION_COORDS, getMarketPricesForLocation } from "../constants";
 import { DiagnosisResult, Language, WeatherData, ForecastDay } from "../types";
 
@@ -158,7 +158,7 @@ export const analyzeCropImage = async (
   promptText: string,
   lang: Language
 ): Promise<DiagnosisResult> => {
-  const modelId = "gemini-3-pro-preview"; // Use Pro for complex reasoning
+  const modelId = "gemini-3.1-pro-preview"; // Use Pro for complex reasoning
 
   const diagnosisSchema: Schema = {
     type: Type.OBJECT,
@@ -187,7 +187,7 @@ export const analyzeCropImage = async (
         systemInstruction: SYSTEM_PROMPT,
         responseMimeType: "application/json",
         responseSchema: diagnosisSchema,
-        thinkingConfig: { thinkingBudget: 1024 }, // Enable reasoning
+        thinkingConfig: { thinkingLevel: ThinkingLevel.HIGH }, // Enable reasoning
         tools: [{ functionDeclarations: [getMarketPricesTool, getWeatherTool] }]
       }
     });
@@ -213,8 +213,8 @@ export const askAdvisor = async (query: string, lang: Language, location: string
 
     // Configure based on Mode
     if (mode === 'think') {
-        modelId = "gemini-3-pro-preview";
-        config.thinkingConfig = { thinkingBudget: 2048 }; // Enable deep thinking
+        modelId = "gemini-3.1-pro-preview";
+        config.thinkingConfig = { thinkingLevel: ThinkingLevel.HIGH }; // Enable deep thinking
     } else if (mode === 'store') {
         // Use Google Search for real stores
         modelId = "gemini-3-flash-preview";
@@ -257,7 +257,7 @@ export const askAdvisor = async (query: string, lang: Language, location: string
                 contents: [
                     { role: 'user', parts: [{ text: fullQuery }] },
                     { role: 'model', parts: candidates![0].content.parts },
-                    { role: 'function', parts: toolResults.functionResponses }
+                    { role: 'user', parts: toolResults.functionResponses.map(fr => ({ functionResponse: fr })) }
                 ],
                 config: { systemInstruction: SYSTEM_PROMPT }
              });
